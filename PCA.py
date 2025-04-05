@@ -1,64 +1,28 @@
-import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
-class PCA:
-    def __init__(self, n_components):
-        """
-        Initialize the PCA class.
+# Load the dataset
+file_path = '/Users/kevinhan/CS329ETermProject/koi_data.csv'
+data = pd.read_csv(file_path)
 
-        Parameters:
-        n_components (int): Number of principal components to keep.
-        """
-        self.n_components = n_components
-        self.components = None
-        self.mean = None
+data = data.drop(columns=['koi_disposition'])
 
-    def fit(self, X):
-        """
-        Fit the PCA model to the dataset.
+# Standardize the data
+scaler = StandardScaler()
+data_scaled = scaler.fit_transform(data)
 
-        Parameters:
-        X (numpy.ndarray): The dataset with shape (n_samples, n_features).
-        """
-        # Compute the mean of each feature
-        self.mean = np.mean(X, axis=0)
-        # Center the data
-        X_centered = X - self.mean
-        # Compute the covariance matrix
-        covariance_matrix = np.cov(X_centered, rowvar=False)
-        # Compute eigenvalues and eigenvectors
-        eigenvalues, eigenvectors = np.linalg.eigh(covariance_matrix)
-        # Sort eigenvectors by descending eigenvalues
-        sorted_indices = np.argsort(eigenvalues)[::-1]
-        eigenvectors = eigenvectors[:, sorted_indices]
-        # Select the top n_components eigenvectors
-        self.components = eigenvectors[:, :self.n_components]
+# Perform PCA
+pca = PCA()
+principal_components = pca.fit_transform(data_scaled)
 
-    def transform(self, X):
-        """
-        Apply the PCA transformation to the dataset.
+# Create a DataFrame for the principal components
+pca_columns = [f'PC{i+1}' for i in range(principal_components.shape[1])]
+pca_df = pd.DataFrame(data=principal_components, columns=pca_columns)
 
-        Parameters:
-        X (numpy.ndarray): The dataset with shape (n_samples, n_features).
+# Save the PCA results to a new CSV file
+output_path = '/Users/kevinhan/CS329ETermProject/pca_results.csv'
+pca_df.to_csv(output_path, index=False)
 
-        Returns:
-        numpy.ndarray: The transformed dataset with shape (n_samples, n_components).
-        """
-        if self.components is None:
-            raise ValueError("The PCA model has not been fitted yet.")
-        # Center the data
-        X_centered = X - self.mean
-        # Project the data onto the principal components
-        return np.dot(X_centered, self.components)
-
-    def fit_transform(self, X):
-        """
-        Fit the PCA model and apply the transformation.
-
-        Parameters:
-        X (numpy.ndarray): The dataset with shape (n_samples, n_features).
-
-        Returns:
-        numpy.ndarray: The transformed dataset with shape (n_samples, n_components).
-        """
-        self.fit(X)
-        return self.transform(X)
+# Print explained variance ratio
+print("Explained Variance Ratio:", pca.explained_variance_ratio_)
